@@ -35,8 +35,6 @@
         h1 { text-align: center; color: var(--accent-color); font-size: 24px; margin-bottom: 20px; }
         .screen { display: none; }
         .screen.active { display: block; }
-        
-        /* 共通ボタン・入力 */
         input[type="text"] {
             width: 100%;
             padding: 12px;
@@ -63,8 +61,6 @@
             margin-top: 10px;
         }
         .btn:hover { background: #9333ea; }
-        
-        /* 質問画面 */
         .progress-bar {
             width: 100%;
             height: 8px;
@@ -88,8 +84,6 @@
             transition: all 0.2s;
         }
         .opt-btn:hover { background: #3f3f52; border-color: var(--accent-color); }
-        
-        /* 結果ステータス画面 */
         .result-box { background: #111; border: 2px solid var(--border-color); border-radius: 8px; padding: 20px; margin-bottom: 20px; }
         .res-title { font-size: 18px; font-weight: bold; color: #f59e0b; margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 5px; }
         .stats-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 15px; }
@@ -111,18 +105,13 @@
     </style>
 </head>
 <body>
-
 <div class="container">
     <h1>🧬 ポケモナライズ診断</h1>
-    
-    <!-- 名前入力画面 -->
     <div id="screen-name" class="screen active">
         <p style="text-align: center; margin-bottom: 25px;">ポケモナライズの世界へようこそ！<br>まずはあなたの名前をカタカナで入力してください。</p>
         <input type="text" id="user-name" placeholder="カイジ" maxlength="10">
         <button class="btn" onclick="startDiagnosis()">診断を開始する</button>
     </div>
-    
-    <!-- 質問画面 -->
     <div id="screen-quiz" class="screen">
         <div class="progress-bar"><div id="progress-fill" class="progress-fill"></div></div>
         <div id="question-text" class="question-text">質問がここに表示されます</div>
@@ -133,41 +122,32 @@
             <button class="opt-btn" onclick="submitAnswer(1)">🔴 全くあてはまらない</button>
         </div>
     </div>
-    
-    <!-- 結果画面 -->
     <div id="screen-result" class="screen">
         <h2 style="text-align: center; color:#10b981; margin-bottom:20px;">分析完了！</h2>
-        
         <div class="result-box">
             <div class="res-title">🧬 基本情報</div>
             <div class="stats-row"><span>なまえ:</span><span id="res-name" style="font-weight:bold; color:#a855f7;">-</span></div>
             <div class="stats-row"><span>タイプ:</span><span id="res-type">-</span></div>
             <div class="stats-row"><span>とくせい:</span><span id="res-ability">-</span></div>
         </div>
-
         <div class="result-box">
             <div class="res-title">📊 種族値（能力パラメータ）</div>
             <div id="stats-container"></div>
         </div>
-
         <div class="result-box">
             <div class="res-title">⚔️ わざ構成（完全公式わざ版）</div>
             <div id="moves-container" style="line-height: 1.8; font-size:15px;"></div>
         </div>
-
         <div class="result-box" style="border-color: #a855f7;">
             <div class="res-title" style="color: #a855f7;">🎨 あなたの相棒ポケモンに会いに行こう</div>
-            <p style="font-size: 13px; margin: 5px 0;">以下のプロンプトをコピーしてAI画像生成（MidjourneyやDALL-E 3等）に入力してください。左にイラスト、右に日本語ステータスが生成されます。</p>
+            <p style="font-size: 13px; margin: 5px 0;">以下のプロンプトをコピーしてAI画像生成に入力してください。</p>
             <textarea id="prompt-output" class="prompt-area" readonly></textarea>
             <button class="btn" onclick="copyPrompt()">プロンプトをコピー</button>
         </div>
-        
         <button class="btn" style="background:#4b5563;" onclick="location.reload()">もう一度診断する</button>
     </div>
 </div>
-
 <script>
-// 質問リスト（計24問）
 const questions = [
     { id: 1, type: "EI", dir: 1, text: "初対面の人ばかりの集まりでも、自分から積極的に話しかけにいく。" },
     { id: 2, type: "EI", dir: 1, text: "週末に予定がなく一人で家にいると、退屈でエネルギーが切れたように感じる。" },
@@ -200,27 +180,21 @@ let rawName = "";
 let pokemonName = "";
 let scores = { EI: 0, SN: 0, TF: 0, JP: 0 };
 
-// 1. 診断スタート
 function startDiagnosis() {
     rawName = document.getElementById("user-name").value.trim();
     if(!rawName) { alert("カタカナで名前を入力してください！"); return; }
-    
-    // 名前をポケモン風にモジるルール（末尾にそれっぽい語尾を付与）
     const suffixes = ["ロス", "リス", "ノドン", "ゲリオン", "ウス", "ガロン"];
     const randomSuffix = suffixes[rawName.length % suffixes.length];
     pokemonName = rawName + randomSuffix;
-
     switchScreen("screen-name", "screen-quiz");
     showQuestion();
 }
 
-// 画面切り替え
 function switchScreen(hideId, showId) {
     document.getElementById(hideId).classList.remove("active");
     document.getElementById(showId).classList.add("active");
 }
 
-// 質問の描画
 function showQuestion() {
     if(currentIdx >= questions.length) { calculateResult(); return; }
     const q = questions[currentIdx];
@@ -228,14 +202,77 @@ function showQuestion() {
     document.getElementById("progress-fill").style.width = `${(currentIdx / questions.length) * 100}%`;
 }
 
-// 2. 回答の集計
 function submitAnswer(val) {
     const q = questions[currentIdx];
     let score = val;
-    if(q.dir === -1) { score = 5 - val; } // 負の質問は反転 (1->4, 2->3, 3->2, 4->1)
+    if(q.dir === -1) { score = 5 - val; }
     scores[q.type] += score;
-    
     currentIdx++;
     showQuestion();
 }
 
+function calculateResult() {
+    switchScreen("screen-quiz", "screen-result");
+    const isE = scores.EI >= 15;
+    const isS = scores.SN >= 15;
+    const isT = scores.TF >= 15;
+    const isJ = scores.JP >= 15;
+
+    let type1 = "ノーマル", type2 = "";
+    let ability = "ばんのう";
+    let englishKeywords = "versatile character, balanced mind";
+    let bodyMaterial = "standard texture";
+    let moves = [];
+
+    if (isE && isT) { type1 = "ほのお"; type2 = "はがね"; ability = "ふくつのこころ"; englishKeywords = "passionate spirit, high discipline"; bodyMaterial = "sleek silver metal and glowing ruby armor"; moves = ["フレアドライブ", "アイアンヘッド", "ビルドアップ", "まもる"]; }
+    else if (!isE && isT && isS) { type1 = "エスパー"; type2 = "はがね"; ability = "シンクロ"; englishKeywords = "high intelligence, absolute defense"; bodyMaterial = "sleek silver metal and glowing purple crystalline armor plating"; moves = ["サイコキネシス", "アイアンヘッド", "てっぺき", "みらいよち"]; }
+    else if (isE && !isT) { type1 = "フェアリー"; type2 = "でんき"; ability = "マイペース"; englishKeywords = "bright energy, high empathy"; bodyMaterial = "sparkling yellow and pink neon skin"; moves = ["10まんボルト", "ムーンフォース", "てだすけ", "いやしのすず"]; }
+    else { type1 = "ゴースト"; type2 = "あく"; ability = "プレッシャー"; englishKeywords = "deep shadow, mysterious aura"; bodyMaterial = "dark shadowy mist and obsidian core"; moves = ["シャドーボール", "あくのはどう", "ちょうはつ", "おにび"]; }
+
+    let hp = 70 + Math.floor(scores.EI / 2);
+    let atk = 60 + (isE ? 30 : 10);
+    let def = 60 + (isJ ? 45 : 10);
+    let satk = 60 + (!isS ? 35 : 15);
+    let sdef = 60 + (isT ? 20 : 30);
+    let spd = 60 + (!isJ ? 25 : 15);
+    
+    const diff = 540 - (hp + atk + def + satk + sdef + spd);
+    def += diff; 
+
+    document.getElementById("res-name").innerText = pokemonName;
+    document.getElementById("res-type").innerText = type2 ? `${type1} / ${type2}` : type1;
+    document.getElementById("res-ability").innerText = ability;
+
+    const statsData = [
+        { name: "HP", val: hp }, { name: "こうげき", val: atk }, { name: "ぼうぎょ", val: def },
+        { name: "とくこう", val: satk }, { name: "とくぼう", val: sdef }, { name: "すばやさ", val: spd }
+    ];
+
+    let statsHtml = "";
+    statsData.forEach(s => {
+        const percent = (s.val / 150) * 100;
+        statsHtml += `<div class="stats-row"><span style="width: 70px;">${s.name}:</span><span style="width: 30px; font-weight:bold;">${s.val}</span><div class="stats-bar-bg"><div class="stats-bar-fill" style="width: ${percent}%;"></div></div></div>`;
+    });
+    document.getElementById("stats-container").innerHTML = statsHtml;
+
+    let movesHtml = "";
+    moves.forEach((m, i) => { movesHtml += `<div>${i+1}. ${m}</div>`; });
+    document.getElementById("moves-container").innerHTML = movesHtml;
+
+    const typeStr = type2 ? `${type1} / ${type2}` : type1;
+    const promptText = `An official Pokemon game status screen interface infograph. Split screen layout. On the left side, a brand new Pokemon of ${type1} ${type2 ? 'and '+type2 : ''} type is beautifully illustrated, embodying ${englishKeywords}. Its body features elements of ${bodyMaterial}. It looks like a wise, strategic guardian. On the right side, the text UI must render the pokemon's status explicitly written in Japanese language with high typographical clarity. The UI text on the right must accurately display the following exact words: "なまえ: ${pokemonName}", "タイプ: ${typeStr}", "とくせい: ${ability}", "HP: ${hp}", "こうげき: ${atk}", "ぼうぎょ: ${def}", "とくこう: ${satk}", "とくぼう: ${sdef}", "すばやさ: ${spd}" with clean progress bars showing only the base stats, strictly without any fractional current/max status values like "${hp}/${hp}" or extra fraction numbers on the far right. Under the stats, a list of 4 moves: "1. ${moves[0]}", "2. ${moves[1]}", "3. ${moves[2]}", "4. ${moves[3]}". Official Pokemon game artwork style, Sugimori Ken style, clean cel-shading, distinct black outlines, high resolution, solid soft-colored UI background, official pokedex concept art layout.`;
+    
+    document.getElementById("prompt-output").value = promptText;
+}
+
+function copyPrompt() {
+    const copyText = document.getElementById("prompt-output");
+    copyText.select();
+    navigator.clipboard.writeText(copyText.value);
+    alert("プロンプトをコピーしました！AI画像生成ツールに貼り付けてください。");
+}
+</script>
+</body>
+</html>
+
+    
