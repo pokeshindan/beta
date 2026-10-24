@@ -91,6 +91,9 @@
         .stats-bar-fill { height: 100%; background: #10b981; }
         .analysis-text { font-size: 14px; line-height: 1.6; color: #d1d5db; margin-top: 10px; white-space: pre-line; }
         .mbti-bar-fill { height: 100%; background: #3b82f6; }
+        .compat-item { margin-bottom: 12px; font-size: 14px; line-height: 1.5; }
+        .compat-name { font-weight: bold; color: #f3f4f6; }
+        .compat-reason { font-size: 13px; color: #9ca3af; margin-left: 5px; }
         .prompt-area {
             width: 100%;
             height: 120px;
@@ -142,12 +145,22 @@
         </div>
 
         <div class="result-box">
-            <div class="res-title">📊 種族値</div>
+            <div class="res-title">⚔️ 対戦相性（実在ポケモンとの相性診断）</div>
+            <div style="color: #10b981; font-weight: bold; font-size: 15px; margin-bottom: 5px;">🔥 得意なポケモン（2匹）</div>
+            <div id="compat-good"></div>
+            <div style="color: #ef4444; font-weight: bold; font-size: 15px; margin-top: 15px; margin-bottom: 5px;">⚠️ 苦手なポケモン（2匹）</div>
+            <div id="compat-bad"></div>
+            <div style="color: #3b82f6; font-weight: bold; font-size: 15px; margin-top: 15px; margin-bottom: 5px;">🤝 同時選出したい味方（2匹）</div>
+            <div id="compat-team"></div>
+        </div>
+
+        <div class="result-box">
+            <div class="res-title">📊 ポケモン種族値</div>
             <div id="stats-container"></div>
         </div>
 
         <div class="result-box">
-            <div class="res-title">⚔️ わざ構成</div>
+            <div class="res-title">⚔️ わざ構成（完全公式わざ版）</div>
             <div id="moves-container" style="line-height: 1.8; font-size:15px;"></div>
         </div>
 
@@ -160,6 +173,7 @@
         <button class="btn" style="background:#4b5563;" onclick="location.reload()">もう一度診断する</button>
     </div>
 </div>
+
 <script>
 const questions = [
     { id: 1, type: "EI", dir: 1, text: "初対面の人ばかりの集まりでも、自分から積極的に話しかけにいく。" },
@@ -194,138 +208,3 @@ let pokemonName = "";
 let scores = { EI: 0, SN: 0, TF: 0, JP: 0 };
 
 function startDiagnosis() {
-    rawName = document.getElementById("user-name").value.trim();
-    if(!rawName) { alert("カタカナで名前を入力してください！"); return; }
-    const suffixes = ["ロス", "リス", "ノドン", "ゲリオン", "ウス", "ガロン"];
-    const randomSuffix = suffixes[rawName.length % suffixes.length];
-    pokemonName = rawName + randomSuffix;
-    switchScreen("screen-name", "screen-quiz");
-    showQuestion();
-}
-
-function switchScreen(hideId, showId) {
-    document.getElementById(hideId).classList.remove("active");
-    document.getElementById(showId).classList.add("active");
-}
-
-function showQuestion() {
-    if(currentIdx >= questions.length) { calculateResult(); return; }
-    const q = questions[currentIdx];
-    document.getElementById("question-text").innerText = `Q${currentIdx + 1}: ${q.text}`;
-    document.getElementById("progress-fill").style.width = `${(currentIdx / questions.length) * 100}%`;
-}
-
-function submitAnswer(val) {
-    const q = questions[currentIdx];
-    let score = val;
-    if(q.dir === -1) { score = 5 - val; }
-    scores[q.type] += score;
-    currentIdx++;
-    showQuestion();
-}
-
-function calculateResult() {
-    switchScreen("screen-quiz", "screen-result");
-    
-    // 各指標の割合（最低6点〜最高24点なので、割合％に変換）
-    const getPercentage = (score) => Math.round(((score - 6) / 18) * 100);
-    const pEI = getPercentage(scores.EI);
-    const pSN = getPercentage(scores.SN);
-    const pTF = getPercentage(scores.TF);
-    const pJP = getPercentage(scores.JP);
-
-    const isE = scores.EI >= 15;
-    const isS = scores.SN >= 15;
-    const isT = scores.TF >= 15;
-    const isJ = scores.JP >= 15;
-
-    let type1 = "ノーマル", type2 = "";
-    let ability = "ばんのう";
-    let englishKeywords = "versatile character, balanced mind";
-    let bodyMaterial = "standard texture";
-    let moves = [];
-    
-    let summaryText = "";
-    let analysisDesc = "";
-
-    // 4パターンの詳細な性格・性能の紐付け解析テキスト
-    if (isE && isT) { 
-        type1 = "ほのお"; type2 = "はがね"; ability = "ふくつのこころ"; englishKeywords = "passionate spirit, high discipline"; bodyMaterial = "sleek silver metal and glowing ruby armor"; moves = ["フレアドライブ", "アイアンヘッド", "ビルドアップ", "ままもる"]; 
-        summaryText = "内面に熱いパッションを秘めつつ、規律を守る鉄壁のリーダー！";
-        analysisDesc = "【タイプ分析】高い外向性と論理性が「ほのお」、時間や規律への厳格さが「はがね」を形成しました。\n【種族値解析】自己主張と行動力の高さが「こうげき」を高め、ルールを死守する誠実さが圧倒的な「ぼうぎょ」の数値に直結しています。";
-    }
-    else if (!isE && isT && isS) { 
-        type1 = "エスパー"; type2 = "はがね"; ability = "シンクロ"; englishKeywords = "high intelligence, absolute defense"; bodyMaterial = "sleek silver metal and glowing purple crystalline armor plating"; moves = ["サイコキネシス", "アイアンヘッド", "てっぺき", "みらいよち"]; 
-        summaryText = "深い洞察力と論理的な思考力を持ち、他者との約束を完璧に守る「冷徹な知略家」！";
-        analysisDesc = "【タイプ分析】物事の背景や深い設定を読み解く高い知性が「エスパー」、他者との約束や締め切りを絶対に破らない強固な責任感が「はがね」を呼び覚ましました。\n【種族値解析】周囲の空気を鋭く察知する思慮深さから、物理攻撃よりも「とくこう（知性）」が発達。コツコツ課題を終わらせる計画性が「すばやさ」と「ぼうぎょ（堅実さ）」の高さの最大の理由です。";
-    }
-    else if (isE && !isT) { 
-        type1 = "フェアリー"; type2 = "でんき"; ability = "マイペース"; englishKeywords = "bright energy, high empathy"; bodyMaterial = "sparkling yellow and pink neon skin"; moves = ["10まんボルト", "ムーンフォース", "てだすけ", "いやしのすず"]; 
-        summaryText = "圧倒的な共感力で場を明るく盛り上げる、みんなのムードメーカー！";
-        analysisDesc = "【タイプ分析】他人の感情に寄り添う温かさが「フェアリー」、持ち前のフットワークの軽さと明るさが「でんき」に変換されました。\n【種族値解析】自分のルーティンに縛られない柔軟な姿勢から、防御よりも「すばやさ（フットワーク）」が上昇。他人の悩みを解決へと導くサポート力が、わざの「てだすけ」や「いやしのすず」に表れています。";
-    }
-    else { 
-        type1 = "ゴースト"; type2 = "あく"; ability = "プレッシャー"; englishKeywords = "deep shadow, mysterious aura"; bodyMaterial = "dark shadowy mist and obsidian core"; moves = ["シャドーボール", "あくのはどう", "ちょうはつ", "おにび"]; 
-        summaryText = "独自の世界観を内に秘めた、ミステリアスな単独行動派！";
-        analysisDesc = "【タイプ分析】一人の時間を何より大切にする内向的な気質が「ゴースト」、他人に流されず損得を客観的に計算できるクールさが「あく」となりました。\n【種族値解析】他人の感情のピリピリ感を敏感に察知しつつも、自分の領域を侵させない防御壁を持つため、「HP（ストレス耐性）」と「とくぼう（スルー技術）」が高くなっています。";
-    }
-
-    let hp = 70 + Math.floor(scores.EI / 2);
-    let atk = 60 + (isE ? 30 : 10);
-    let def = 60 + (isJ ? 45 : 10);
-    let satk = 60 + (!isS ? 35 : 15);
-    let sdef = 60 + (isT ? 20 : 30);
-    let spd = 60 + (!isJ ? 25 : 15);
-    
-    const diff = 540 - (hp + atk + def + satk + sdef + spd);
-    def += diff; 
-
-    // 結果画面の描画
-    document.getElementById("res-name").innerText = pokemonName;
-    document.getElementById("res-type").innerText = type2 ? `${type1} / ${type2}` : type1;
-    document.getElementById("res-ability").innerText = ability;
-    document.getElementById("res-summary").innerText = summaryText;
-    document.getElementById("analysis-desc").innerText = analysisDesc;
-
-    // 性格特性（MBTI）バーの描画
-    const mbtiData = [
-        { label: "エネルギー", left: "内向型", right: "外向型", val: pEI },
-        { label: "物事の捉え方", left: "直感型", right: "現実型", val: pSN },
-        { label: "判断の基準", left: "感情型", right: "論理型", val: pTF },
-        { label: "物事への接し方", left: "柔軟型", right: "規律型", val: pJP }
-    ];
-    let mbtiHtml = "";
-    mbtiData.forEach(m => {
-        mbtiHtml += `
-            <div style="margin-bottom: 12px; font-size:13px;">
-                <div style="display:flex; justify-content:space-between; margin-bottom:2px;">
-                    <span>${m.left}</span><strong>${m.label}</strong><span>${m.right}</span>
-                </div>
-                <div style="display:flex; align-items:center; justify-content:space-between;">
-                    <span style="font-size:11px; color:#9ca3af;">${100 - m.val}%</span>
-                    <div class="stats-bar-bg" style="width:80%; height:10px;"><div class="mbti-bar-fill" style="width: ${m.val}%;"></div></div>
-                    <span style="font-size:11px; color:#9ca3af;">${m.val}%</span>
-                </div>
-            </div>`;
-    });
-    document.getElementById("mbti-container").innerHTML = mbtiHtml;
-
-    // 種族値バーの描画
-    const statsData = [
-        { name: "HP", val: hp }, { name: "こうげき", val: atk }, { name: "ぼうぎょ", val: def },
-        { name: "とくこう", val: satk }, { name: "とくぼう", val: sdef }, { name: "すばやさ", val: spd }
-    ];
-    let statsHtml = "";
-    statsData.forEach(s => {
-        const percent = (s.val / 150) * 100;
-        statsHtml += `<div class="stats-row"><span style="width: 70px; font-size:14px;">${s.name}:</span><span style="width: 35px; font-weight:bold; font-size:14px;">${s.val}</span><div class="stats-bar-bg"><div class="stats-bar-fill" style="width: ${percent}%;"></div></div></div>`;
-    });
-    document.getElementById("stats-container").innerHTML = statsHtml;
-
-    let movesHtml = "";
-    moves.forEach((m, i) => { movesHtml += `<div>${i+1}. ${m}</div>`; });
-    document.getElementById("moves-container").innerHTML = movesHtml;
-
-    const typeStr = type2 ? `${type1} / ${type2}` : type1;
-
-    
