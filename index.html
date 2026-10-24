@@ -5,206 +5,296 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ポケモナライズ診断</title>
     <style>
-        :root {
-            --bg-color: #121214;
-            --panel-color: #1e1e24;
-            --accent-color: #a855f7;
-            --text-color: #f3f4f6;
-            --border-color: #374151;
-        }
-        * { box-sizing: border-box; font-family: 'Helvetica Neue', Arial, sans-serif; }
+        @import url('https://googleapis.com');
+
         body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            margin: 0;
-            padding: 20px;
+            background-color: #1a1a1a;
+            font-family: 'DotGothic16', sans-serif;
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
+            margin: 0;
+            padding: 10px;
+            box-sizing: border-box;
+            user-select: none;
+            color: #333;
         }
-        .container {
+
+        /* 画面全体のコンテナ */
+        .game-container {
             width: 100%;
-            max-width: 600px;
-            background-color: var(--panel-color);
-            border: 4px solid var(--border-color);
-            border-radius: 12px;
-            padding: 30px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            max-width: 500px;
+            height: 600px;
+            background: linear-gradient(to bottom, #8cadd4 0%, #e2ebf0 100%);
+            border: 6px solid #4a4a4a;
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.7);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
         }
-        h1 { text-align: center; color: var(--accent-color); font-size: 24px; margin-bottom: 20px; }
-        .screen { display: none; }
-        .screen.active { display: block; }
-        input[type="text"] {
-            width: 100%;
-            padding: 12px;
-            background: #111;
-            border: 2px solid var(--border-color);
-            color: #fff;
-            border-radius: 6px;
-            font-size: 16px;
-            margin-bottom: 20px;
+
+        /* メイン画面エリア */
+        .screen-area {
+            flex: 1;
+            position: relative;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            overflow-y: auto;
+        }
+
+        /* ポケモン風ステータスウインドウ */
+        .status-window {
+            background-color: #fffdec;
+            border: 4px solid #4a4a4a;
+            border-radius: 12px 0px 12px 0px;
+            padding: 10px 15px;
+            width: 80%;
+            margin: 0 auto;
+            box-shadow: 4px 4px 0px #4a4a4a;
+            box-sizing: border-box;
             text-align: center;
         }
-        .btn {
-            display: block;
+
+        .status-window .title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #111;
+            margin-bottom: 5px;
+        }
+
+        /* 進捗バー */
+        .progress-container {
             width: 100%;
-            padding: 14px;
-            background: var(--accent-color);
-            color: white;
-            border: none;
+            height: 10px;
+            background-color: #ccc;
+            border: 2px solid #4a4a4a;
             border-radius: 6px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+
+        .progress-bar {
+            width: 0%;
+            height: 100%;
+            background-color: #50c878;
+            transition: width 0.3s ease;
+        }
+
+        /* 中央の演出・テキスト・結果表示エリア */
+        .display-center {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            margin: 15px 0;
+            overflow-y: auto;
+        }
+
+        /* 入力フォームスタイル */
+        .input-box {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+            justify-content: center;
+            margin-top: 10px;
+        }
+
+        .input-box input {
+            font-family: 'DotGothic16', sans-serif;
+            font-size: 18px;
+            padding: 5px 10px;
+            border: 3px solid #4a4a4a;
+            border-radius: 4px;
+            width: 60%;
+            text-align: center;
+            outline: none;
+        }
+
+        /* 下部UIエリア（メッセージ＆コマンド） */
+        .ui-area {
+            height: 160px;
+            background-color: #f8f8f8;
+            border-top: 6px solid #4a4a4a;
+            display: flex;
+            flex-direction: column;
+            padding: 6px;
+            box-sizing: border-box;
+            gap: 6px;
+        }
+
+        /* ダイヤログボックス */
+        .dialog-box {
+            flex: 1;
+            border: 4px solid #5858a8;
+            border-radius: 6px;
+            background-color: #fff;
+            padding: 10px 12px;
             font-size: 16px;
+            line-height: 1.4;
+            box-sizing: border-box;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+
+        /* 4択コマンドボタンエリア */
+        .command-box {
+            height: 65px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 4px;
+        }
+
+        .btn {
+            background-color: #fff;
+            border: 3px solid #e08000;
+            border-radius: 6px;
+            font-family: 'DotGothic16', sans-serif;
+            font-size: 14px;
             font-weight: bold;
             cursor: pointer;
-            transition: background 0.2s;
-            margin-top: 10px;
-        }
-        .btn:hover { background: #9333ea; }
-        .progress-bar {
-            width: 100%;
-            height: 8px;
-            background: #111;
-            border-radius: 4px;
-            margin-bottom: 25px;
-            overflow: hidden;
-        }
-        .progress-fill { height: 100%; background: var(--accent-color); width: 0%; transition: width 0.3s; }
-        .question-text { font-size: 18px; line-height: 1.6; margin-bottom: 30px; min-height: 60px; text-align: center; }
-        .options { display: flex; flex-direction: column; gap: 12px; }
-        .opt-btn {
-            background: #2a2a35;
-            color: var(--text-color);
-            border: 2px solid var(--border-color);
-            padding: 14px;
-            border-radius: 6px;
-            cursor: pointer;
             text-align: left;
-            font-size: 15px;
-            transition: all 0.2s;
+            padding-left: 20px;
+            outline: none;
+            position: relative;
+            display: flex;
+            align-items: center;
+            transition: background 0.1s;
         }
-        .opt-btn:hover { background: #3f3f52; border-color: var(--accent-color); }
-        .result-box { background: #111; border: 2px solid var(--border-color); border-radius: 8px; padding: 20px; margin-bottom: 20px; }
-        .res-title { font-size: 18px; font-weight: bold; color: #f59e0b; margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 5px; }
-        .stats-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 15px; align-items: center; }
-        .stats-bar-bg { width: 55%; background: #222; height: 16px; border-radius: 3px; overflow: hidden; border: 1px solid #444; }
-        .stats-bar-fill { height: 100%; background: #10b981; }
-        .analysis-text { font-size: 14px; line-height: 1.6; color: #d1d5db; margin-top: 10px; white-space: pre-line; }
-        .mbti-bar-fill { height: 100%; background: #3b82f6; }
-        .compat-item { margin-bottom: 12px; font-size: 14px; line-height: 1.5; }
-        .compat-name { font-weight: bold; color: #f3f4f6; }
-        .compat-reason { font-size: 13px; color: #9ca3af; margin-left: 5px; }
-        .prompt-area {
+
+        .btn:hover {
+            background-color: #fffdec;
+        }
+
+        .btn::before {
+            content: '▶';
+            position: absolute;
+            left: 6px;
+            color: transparent;
+            font-size: 10px;
+        }
+
+        .btn:hover::before {
+            color: #e08000;
+        }
+
+        /* 結果画面専用のスクロールコンテナ */
+        .result-container {
             width: 100%;
-            height: 120px;
-            background: #000;
-            color: #10b981;
+            height: 100%;
+            background-color: #fffdec;
+            border: 4px solid #4a4a4a;
+            border-radius: 8px;
+            padding: 12px;
+            box-sizing: border-box;
+            overflow-y: auto;
+            font-size: 14px;
+            line-height: 1.5;
+            text-align: left;
+        }
+        
+        .result-container h3 {
+            margin-top: 0;
+            border-bottom: 2px dashed #4a4a4a;
+            padding-bottom: 4px;
+            text-align: center;
+            font-size: 18px;
+        }
+
+        .code-block {
+            background-color: #222;
+            color: #0f0;
+            padding: 8px;
             font-family: monospace;
-            padding: 10px;
-            border-radius: 6px;
-            border: 1px solid var(--border-color);
-            resize: none;
-            font-size: 12px;
-            margin-top: 10px;
+            font-size: 11px;
+            white-space: pre-wrap;
+            word-break: break-all;
+            border-radius: 4px;
+            margin-top: 5px;
+            user-select: text;
         }
     </style>
 </head>
 <body>
-<div class="container">
-    <h1>🧬 ポケモナライズ診断</h1>
-    <div id="screen-name" class="screen active">
-        <p style="text-align: center; margin-bottom: 25px;">ポケモナライズの世界へようこそ！<br>まずはあなたの名前をカタカナで入力してください。</p>
-        <input type="text" id="user-name" placeholder="サトシ" maxlength="10">
-        <button class="btn" onclick="startDiagnosis()">診断を開始する</button>
-    </div>
-    <div id="screen-quiz" class="screen">
-        <div class="progress-bar"><div id="progress-fill" class="progress-fill"></div></div>
-        <div id="question-text" class="question-text">質問がここに表示されます</div>
-        <div class="options">
-            <button class="opt-btn" onclick="submitAnswer(4)">🟢 非常にあてはまる</button>
-            <button class="opt-btn" onclick="submitAnswer(3)">🔵 ややあてはまる</button>
-            <button class="opt-btn" onclick="submitAnswer(2)">🟡 あまりあてはまらない</button>
-            <button class="opt-btn" onclick="submitAnswer(1)">🔴 全くあてはまらない</button>
+
+    <div class="game-container">
+        <div class="screen-area">
+            <!-- 上部ステータス表示 -->
+            <div class="status-window">
+                <div class="title" id="stage-title">ポケモナライズ</div>
+                <div class="progress-container">
+                    <div class="progress-bar" id="p-bar"></div>
+                </div>
+            </div>
+
+            <!-- 中央メイン表示 -->
+            <div class="display-center" id="main-display">
+                <!-- 初期状態はドット絵風のモンスターボールテキストなど（スペース用） -->
+                <div style="font-size: 40px;">🔴</div>
+            </div>
+        </div>
+
+        <!-- 下部コントロールエリア -->
+        <div class="ui-area">
+            <div class="dialog-box" id="dialog-text">ポケモナライズしんだんへ ようこそ！</div>
+            <div class="command-box" id="cmd-box" style="display:none;">
+                <button class="btn" onclick="handleAnswer(1)">1:全くない</button>
+                <button class="btn" onclick="handleAnswer(2)">2:あまりない</button>
+                <button class="btn" onclick="handleAnswer(3)">3:ややある</button>
+                <button class="btn" onclick="handleAnswer(4)">4:非常にある</button>
+            </div>
         </div>
     </div>
-    <div id="screen-result" class="screen">
-        <h2 style="text-align: center; color:#10b981; margin-bottom:20px;">分析完了！</h2>
-        
-        <div class="result-box">
-            <div class="res-title">🧬 基本情報</div>
-            <div class="stats-row"><span>なまえ:</span><span id="res-name" style="font-weight:bold; color:#a855f7;">-</span></div>
-            <div class="stats-row"><span>タイプ:</span><span id="res-type">-</span></div>
-            <div class="stats-row"><span>とくせい:</span><span id="res-ability">-</span></div>
-            <div id="res-summary" class="analysis-text" style="color:#f59e0b; font-weight:bold; border-top:1px solid #222; padding-top:10px;"></div>
-        </div>
 
-        <div class="result-box">
-            <div class="res-title">🧠 性格特性の解析（人間性パラメータ）</div>
-            <div id="mbti-container"></div>
-            <div id="analysis-desc" class="analysis-text" style="border-top:1px solid #222; padding-top:10px;"></div>
-        </div>
+    <script>
+        // 質問データ定義
+        const questions = [
+            // E/I
+            { id: 1, type: 'E', sign: 1, text: "Q1: 初対面の人ばかりの集まりでも、自分から積極的に話しかけにいく。" },
+            { id: 2, type: 'E', sign: 1, text: "Q2: 週末に予定がなく一人で家にいると、退屈でエネルギーが切れたように感じる。" },
+            { id: 3, type: 'E', sign: 1, text: "Q3: 自分の考えやアイデアを、言葉や行動で周囲にアピールするのが得意だ。" },
+            { id: 4, type: 'E', sign: -1, text: "Q4: 大人数でワイワイ過ごすよりも、気心の知れた少人数で静かに過ごす方が好きだ。" },
+            { id: 5, type: 'E', sign: -1, text: "Q5: 外出してたくさんの人と関わった後は、一人の時間を作って充電する必要がある。" },
+            { id: 6, type: 'E', sign: -1, text: "Q6: 自分の意見を求められたとき、口に出す前に頭の中でじっくり考えてから発言する。" },
+            // S/N
+            { id: 7, type: 'S', sign: 1, text: "Q7: 物事を考えるときは、抽象的な理想よりも「過去のデータ」や「事実」を重視する。" },
+            { id: 8, type: 'S', sign: 1, text: "Q8: マニュアルや手順書がある作業を、ミスなく正確に進めることが得意だ。" },
+            { id: 9, type: 'S', sign: 1, text: "Q9: 無駄話やファンタジーな話よりも、実生活や仕事にすぐ役立つ実用的な話が好きだ。" },
+            { id: 10, type: 'S', sign: -1, text: "Q10: 小説や映画、アニメの世界に深くのめり込み、その設定や背景を考察するのが好きだ。" },
+            { id: 11, type: 'S', sign: -1, text: "Q11: クリエイティブなアイデアを出したり、まだ誰も試していない新しい方法に挑戦するのが好きだ。" },
+            { id: 12, type: 'S', sign: -1, text: "Q12: 日常の些細な出来事から、何か深い意味や将来の可能性を妄想（想像）することが多い。" },
+            // T/F
+            { id: 13, type: 'T', sign: 1, text: "Q13: 友人の悩み相談に乗るときは、慰めるよりも「具体的にどう解決するか」のアドバイスを優先しがちだ。" },
+            { id: 14, type: 'T', sign: 1, text: "Q14: 議論や話し合いの場では、相手の感情に配慮するよりも「筋が通っているか（正論か）」を重視する。" },
+            { id: 15, type: 'T', sign: 1, text: "Q15: 何か大きな決断をするときは、自分の感情や好き嫌いを排除して客観的に損得を計算する。" },
+            { id: 16, type: 'T', sign: -1, text: "Q16: 映画や小説、他人の実体験の話に感情移入しやすく、涙もろい方だと思う。" },
+            { id: 17, type: 'T', sign: -1, text: "Q17: 周囲の人間関係のギスギスした空気や、他人のピリピリした感情を敏感に察知する。" },
+            { id: 18, type: 'T', sign: -1, text: "Q18: たとえ正論であっても、相手の気持ちを傷つけるような言い方は避けるべきだと思う。" },
+            // J/P
+            { id: 19, type: 'J', sign: 1, text: "Q19: 旅行や仕事の予定を立てるときは、事前にしっかりとしたタイムスケジュールを決めてから動きたい。" },
+            { id: 20, type: 'J', sign: 1, text: "Q20: 提出物の締め切りや約束の時間は、何があっても余裕を持って守るようにしている。" },
+            { id: 21, type: 'J', sign: 1, text: "Q21: 部屋の片付けやタスクの消化など、決まったルーティンを毎日計画通りにこなすのが好きだ。" },
+            { id: 22, type: 'J', sign: -1, text: "Q22: 細かいルールや約束事を守るよりも、その場のノリや直感を信じて行動することの方が多い。" },
+            { id: 23, type: 'J', sign: -1, text: "Q23: あらかじめ決まっていた予定が急に変更になっても、ストレスを感じず「まあいいか」と楽しめる。" },
+            { id: 24, type: 'J', sign: -1, text: "Q24: 仕事や勉強の課題は、早くからコツコツやるよりも、締め切り直前に集中して一気に終わらせるタイプだ。" }
+        ];
 
-        <div class="result-box">
-            <div class="res-title">⚔️ 対戦相性（実在ポケモンとの相性診断）</div>
-            <div style="color: #10b981; font-weight: bold; font-size: 15px; margin-bottom: 5px;">🔥 得意なポケモン（2匹）</div>
-            <div id="compat-good"></div>
-            <div style="color: #ef4444; font-weight: bold; font-size: 15px; margin-top: 15px; margin-bottom: 5px;">⚠️ 苦手なポケモン（2匹）</div>
-            <div id="compat-bad"></div>
-            <div style="color: #3b82f6; font-weight: bold; font-size: 15px; margin-top: 15px; margin-bottom: 5px;">🤝 同時選出したい味方（2匹）</div>
-            <div id="compat-team"></div>
-        </div>
+        // 各指標の相槌用リアクション
+        const reactions = [
+            "なるほど！ あなたの行動的な一面が見えますね。",
+            "ふむふむ、じっくり構えるタイプのようですね。",
+            "現実的な目線、とても大切ですよね。",
+            "豊かな想像力を持っている証拠です！",
+            "常にロジカルに物事を見つめているのですね。",
+            "優しい心の持ち主であることが伝わります。",
+            "計画性があり、とても信頼できる性格です！",
+            "臨機応変で、柔軟なフットワークを持っていますね。"
+        ];
 
-        <div class="result-box">
-            <div class="res-title">📊 ポケモン種族値</div>
-            <div id="stats-container"></div>
-        </div>
-
-        <div class="result-box">
-            <div class="res-title">⚔️ わざ構成（完全公式わざ版）</div>
-            <div id="moves-container" style="line-height: 1.8; font-size:15px;"></div>
-        </div>
-
-        <div class="result-box" style="border-color: #a855f7;">
-            <div class="res-title" style="color: #a855f7;">🎨 あなたの相棒ポケモンに会いに行おう</div>
-            <p style="font-size: 13px; margin: 5px 0;">以下のプロンプトをコピーしてAI画像生成に入力してください。</p>
-            <textarea id="prompt-output" class="prompt-area" readonly></textarea>
-            <button class="btn" onclick="copyPrompt()">プロンプトをコピー</button>
-        </div>
-        <button class="btn" style="background:#4b5563;" onclick="location.reload()">もう一度診断する</button>
-    </div>
-</div>
-
-<script>
-const questions = [
-    { id: 1, type: "EI", dir: 1, text: "初対面の人ばかりの集まりでも、自分から積極的に話しかけにいく。" },
-    { id: 2, type: "EI", dir: 1, text: "週末に予定がなく一人で家にいると、退屈でエネルギーが切れたように感じる。" },
-    { id: 3, type: "EI", dir: 1, text: "自分の考えやアイデアを、言葉や行動で周囲にアピールするのが得意だ。" },
-    { id: 4, type: "EI", dir: -1, text: "大人数でワイワイ過ごすよりも、気心の知れた少人数で静かに過ごす方が好きだ。" },
-    { id: 5, type: "EI", dir: -1, text: "外出してたくさんの人と関わった後は、一人の時間を作って充電する必要がある。" },
-    { id: 6, type: "EI", dir: -1, text: "自分の意見を求められたとき、口に出す前に頭の中でじっくり考えてから発言する。" },
-    { id: 7, type: "SN", dir: 1, text: "物事を考えるときは、抽象的な理想よりも「過去のデータ」や「事実」を重視する。" },
-    { id: 8, type: "SN", dir: 1, text: "マニュアルや手順書がある作業を、ミスなく正確に進めることが得意だ。" },
-    { id: 9, type: "SN", dir: 1, text: "無駄話やファンタジーな話よりも、実生活や仕事にすぐ役立つ実用的な話が好きだ。" },
-    { id: 10, type: "SN", dir: -1, text: "小説や映画、アニメの世界に深くのめり込み、その設定や背景を考察するのが好きだ。" },
-    { id: 11, type: "SN", dir: -1, text: "クリエイティブなアイデアを出したり、まだ誰も試していない新しい方法に挑戦するのが好きだ。" },
-    { id: 12, type: "SN", dir: -1, text: "日常の些細な出来事から、何か深い意味や将来の可能性を妄想（想像）することが多い。" },
-    { id: 13, type: "TF", dir: 1, text: "友人の悩み相談に乗るときは、慰めるよりも「具体的にどう解決するか」のアドバイスを優先しがちだ。" },
-    { id: 14, type: "TF", dir: 1, text: "議論や話し合いの場では、相手の感情に配慮するよりも「筋が通っているか（正論か）」を重視する。" },
-    { id: 15, type: "TF", dir: 1, text: "何か大きな決断をするときは、自分の感情や好き嫌いを排除して客観的に損得を計算する。" },
-    { id: 16, type: "TF", dir: -1, text: "映画や小説、他人の実体験の話に感情移入しやすく、涙もろい方だと思う。" },
-    { id: 17, type: "TF", dir: -1, text: "周囲の人間関係のギスギスした空気や、他人のピリピリした感情を敏感に察知する。" },
-    { id: 18, type: "TF", dir: -1, text: "たとえ正論であっても、相手の気持ちを傷つけるような言い方は避けるべきだと思う。" },
-    { id: 19, type: "JP", dir: 1, text: "旅行や仕事の予定を立てるときは、事前にしっかりとしたタイムスケジュールを決めてから動きたい。" },
-    { id: 20, type: "JP", dir: 1, text: "提出物の締め切りや約束の時間は、何があっても余裕を持って守るようにしている。" },
-    { id: 21, type: "JP", dir: 1, text: "部屋の片付けやタスクの消化など、決まったルーティンを毎日計画通りにこなすのが好きだ。" },
-    { id: 22, type: "JP", dir: -1, text: "細かいルールや約束事を守るよりも、その場のノリや直感を信じて行動することの方が多い。" },
-    { id: 23, type: "JP", dir: -1, text: "あらかじめ決まっていた予定が急に変更になっても、ストレスを感じず「まあいいか」と楽しめる。" },
-    { id: 24, type: "JP", dir: -1, text: "仕事や勉強の課題は、早くからコツコツやるよりも、締め切り直前に集中して一気に終わらせるタイプだ。" }
-];
-
-let currentIdx = 0;
-let rawName = "";
-let pokemonName = "";
-let scores = { EI: 0, SN: 0, TF: 0, JP: 0 };
-
-function startDiagnosis() {
+        let currentStep = 0; // 0:名前入力, 1~24:質問
